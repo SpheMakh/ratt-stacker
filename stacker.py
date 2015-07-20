@@ -56,26 +56,26 @@ def stackem(imagename, positions, width, pixels=False, savefig=None, showfig=Fal
         stacked += subregion(data, pos, width/2)
 
     # Get average stacked signal
-    stacked /= len(positions)
+    #stacked /= len(positions)
     # Fit gaussian to stacked emission
 
     # First create a threshhold mask
     std = stacked.std()
     smooth = filters.gaussian_filter(stacked,[2,2])
     mask = smooth>2*std
-    p = gaussfitter2.gaussfit(stacked)
-    peak = p[1]
-    cell = numpy.deg2rad(abs(hdr["CDELT1"]))
-    tot = peak*(2*math.pi)*abs(p[4]*p[5])
+    #p = gaussfitter2.gaussfit(stacked)
+    #peak = p[1]
+    #cell = numpy.deg2rad(abs(hdr["CDELT1"]))
+    #tot = peak*(2*math.pi)*abs(p[4]*p[5])
 
     if savefig or showfig:
-        pylab.imshow(stacked*mask)
+        pylab.imshow(stacked)
         pylab.colorbar()
-        text = "Peak=%.4g  : Tot=%s"%(peak, tot)
-        pylab.title(text)
+        #text = "Peak=%.4g  : Tot=%s"%(peak, tot)
+        #pylab.title(text)
         x,y = [numpy.linspace(0,width,width)]*2
         xx,yy = numpy.meshgrid(x,y)
-        pylab.contour( gaussfitter2.twodgaussian(p,0,1,1)(xx,yy))
+        #pylab.contour( gaussfitter2.twodgaussian(p,0,1,1)(xx,yy))
 
         if savefig:
             pylab.savefig(savefig)
@@ -84,8 +84,7 @@ def stackem(imagename, positions, width, pixels=False, savefig=None, showfig=Fal
         else:
             pylab.clf()
 
-    print stacked.max()
-    return p
+    return stacked.max() 
 
 
 if __name__ == "__main__":
