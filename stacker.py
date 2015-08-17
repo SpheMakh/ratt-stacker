@@ -29,7 +29,7 @@ def subregion(data, centre, radius):
     
     
 
-def stackem(imagename, positions, width, pixels=False, savefig=None, showfig=False):
+def stackem(imagename, positions, width, pixels=False, stokes_ind=0, prefix="stacker-default"):
     """ Perfom continuun stacking """
     
     with pyfits.open(imagename) as hdu:
@@ -39,8 +39,11 @@ def stackem(imagename, positions, width, pixels=False, savefig=None, showfig=Fal
     ndim = hdr["NAXIS"]
     # I only want the image data in the first plane
     # May deal with multiple channels/polarizations later
+
+    sind = ndim - filter( lambda a: hdr["CTYPE%d"%a].startswith("STOKES"), range(1, ndim+1))[0]
     imslice = [slice(None)]*ndim
     imslice[:-2] = [0]*(ndim-2)
+    imslice[sind] = stokes_ind
 
     data = _data[imslice]
 
@@ -56,7 +59,7 @@ def stackem(imagename, positions, width, pixels=False, savefig=None, showfig=Fal
         stacked += subregion(data, pos, width/2)
 
     # Get average stacked signal
-    #stacked /= len(positions)
+    stacked /= len(positions)
     # Fit gaussian to stacked emission
 
     # First create a threshhold mask
@@ -68,21 +71,26 @@ def stackem(imagename, positions, width, pixels=False, savefig=None, showfig=Fal
     #cell = numpy.deg2rad(abs(hdr["CDELT1"]))
     #tot = peak*(2*math.pi)*abs(p[4]*p[5])
 
-    if savefig or showfig:
-        pylab.imshow(stacked)
-        pylab.colorbar()
-        #text = "Peak=%.4g  : Tot=%s"%(peak, tot)
-        #pylab.title(text)
-        x,y = [numpy.linspace(0,width,width)]*2
-        xx,yy = numpy.meshgrid(x,y)
-        #pylab.contour( gaussfitter2.twodgaussian(p,0,1,1)(xx,yy))
+    
+    pylab.imshow(stacked)
+    pylab.colorbar()
+    #text = "Peak=%.4g  : Tot=%s"%(peak, tot)
+    #pylab.title(text)
+    x,y = [numpy.linspace(0,width,width)]*2
+    xx,yy = numpy.meshgrid(x,y)
+    #pylab.contour( gaussfitter2.twodgaussian(p,0,1,1)(xx,yy))
 
-        if savefig:
-            pylab.savefig(savefig)
-        if showfig:
-            pylab.show()
-        else:
-            pylab.clf()
+    pylab.savefig(prefix+"2d.png")
+    pylab.clf()
+
+    pylab.plot(numpy.diagonal(stacked)*1e3, "b-", label="stacked")
+    noise = data.std()
+    pylab.plot( [noise*1e3],"r--", label="noise")
+    pylab.ylabel("mJy/beam")
+    pylab.legend()
+    pylab.title("Noise = %.3g mJy"%(noise*1e3))
+    pylab.savefig(prefix+"1d.png")
+    pylab.clf()
 
     return stacked.max() 
 
@@ -95,4 +103,4 @@ if __name__ == "__main__":
     model = Tigger.load(lsmname)
     positions = [ map(numpy.rad2deg, [src.pos.ra, src.pos.dec]) for src in model.sources]
 
-    stackem(imagename, positions, 50, showfig=True)
+    stackem(imagename, positions, 100, prefix="3c147-stacked-V")
